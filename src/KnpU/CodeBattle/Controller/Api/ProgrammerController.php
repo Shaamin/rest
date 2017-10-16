@@ -15,6 +15,9 @@ class ProgrammerController extends BaseController
     protected function addRoutes(ControllerCollection $controllers)
     {
          $controllers->post('/api/programmers', array($this, 'newAction'));
+         $controllers->get('/api/programmers', array($this, 'listAction'));
+         $controllers->get('/api/programmers/{nickname}', array($this, 'showAction'))
+            ->bind('api_programmers_show');
     }
 
     public function newAction(Request $request)
@@ -29,10 +32,55 @@ class ProgrammerController extends BaseController
 
         $this->save($programmer);
 
-        $response = new Response('It worked! Trust me? I\'m an API!', 201);
-        $response->headers->set('Location', '/programmers/not/fake...');
+        $url = $this->generateUrl('api_programmers_show', [
+            'nickname' => $programmer->nickname
+        ]);
+
+        $data = $this->serializeProgrammer($programmer);
+
+        $response = new JsonResponse($data, 201);
+        $response->headers->set('Location', $url);
 
         return $response;
     }
 
+    public function showAction($nickname)
+    {
+        $programmer = $this->getProgrammerRepository()
+            ->findOneByNickname($nickname);
+
+        if (!$programmer) {
+            $this->throw404('Oh no! This programmer has deserted! We\'ll send a search party!');
+        }
+
+        $data = $this->serializeProgrammer($programmer);
+
+        $response = new JsonResponse($data, 200);
+
+        return $response;
+    }
+
+    public function listAction()
+    {
+        $programmers = $this->getProgrammerRepository()->findAll();
+
+        $data = ['programmers' => []];
+        foreach ($programmers as $programmer) {
+            $data['programmers'][] = $this->serializeProgrammer($programmer);
+        }
+
+        $response = new JsonResponse($data, 200);
+
+        return $response;
+    }
+
+    private function serializeProgrammer(Programmer $programmer)
+    {
+        return [
+            'nickname' => $programmer->nickname,
+            'avatarNumber' => $programmer->avatarNumber,
+            'powerLevel' => $programmer->powerLevel,
+            'tagLine' => $programmer->tagLine,
+        ];
+    }
 }
