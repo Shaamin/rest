@@ -11,6 +11,9 @@ class Programmer
     /* All public properties are persisted */
     public $id;
 
+    /**
+     * @Assert\NotBlank(message="Enter a clever nickname!")
+     */
     public $nickname;
 
     /**
