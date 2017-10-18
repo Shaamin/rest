@@ -2,6 +2,8 @@
 
 namespace KnpU\CodeBattle\Controller\Api;
 
+use KnpU\CodeBattle\Api\ApiProblem;
+use KnpU\CodeBattle\Api\ApiProblemException;
 use KnpU\CodeBattle\Controller\BaseController;
 use KnpU\CodeBattle\Model\Programmer;
 use Silex\Application;
@@ -9,6 +11,7 @@ use Silex\ControllerCollection;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class ProgrammerController extends BaseController
 {
@@ -130,7 +133,9 @@ class ProgrammerController extends BaseController
         $data = json_decode($request->getContent(), true);
 
         if ($data === null) {
-            throw new \Exception('Invalid Json!!! ' . $request->getContent());
+            $apiProblem = new ApiProblem(400, ApiProblem::TYPE_INVALID_REQUEST_BODY_FORMAT);
+
+            throw new ApiProblemException($apiProblem);
         }
 
         $isNew = !$programmer->id;
@@ -154,12 +159,12 @@ class ProgrammerController extends BaseController
 
     private function handleValidationResponse(array $errors)
     {
-        $data = [
-            'type' => 'validation_error',
-            'title' => 'There was a validation error',
-            'errors' => $errors,
-        ];
+        $apiProblem = new ApiProblem(400, ApiProblem::TYPE_VALIDATION_ERROR);
+        $apiProblem->setExtraField('errors', $errors);
 
-        return new JsonResponse($data, 400);
+        $response = new JsonResponse($apiProblem->toArray(), $apiProblem->getStatusCode());
+        $response->headers->add(['Content-Type' => 'application/problem+json']);
+
+        return $response;
     }
 }

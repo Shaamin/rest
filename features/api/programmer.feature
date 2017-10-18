@@ -38,6 +38,20 @@ Feature: Programmer
     """
     And the "errors.nickname" property should exist
     And the "errors.avatarNumber" property should not exist
+    And the "Content-Type" header should be "application/problem+json"
+
+  Scenario: Invalid Json
+    Given I have the payload:
+    """
+      {
+        "avatarNumber" : "2
+        "tagLine" : "I'm from a test!"
+      }
+    """
+    When I request "POST /api/programmers"
+    Then the response status code should be 400
+    And the "Content-Type" header should be "application/problem+json"
+    And the "type" property should equal "invalid_body_format"
 
   Scenario: Get one programmer
     Given the following programmers exist:
