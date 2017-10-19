@@ -3,6 +3,8 @@
 namespace KnpU\CodeBattle;
 
 use Doctrine\Common\Annotations\AnnotationReader;
+use KnpU\CodeBattle\Api\ApiProblem;
+use KnpU\CodeBattle\Api\ApiProblemException;
 use KnpU\CodeBattle\Battle\PowerManager;
 use KnpU\CodeBattle\Repository\BattleRepository;
 use KnpU\CodeBattle\Repository\ProjectRepository;
@@ -20,6 +22,8 @@ use Silex\Provider\TwigServiceProvider;
 use Silex\Provider\DoctrineServiceProvider;
 use Silex\Provider\MonologServiceProvider;
 use Silex\Provider\TranslationServiceProvider;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Translation\Loader\YamlFileLoader;
 use Symfony\Component\Finder\Finder;
 use KnpU\CodeBattle\DataFixtures\FixturesManager;
@@ -286,6 +290,37 @@ class Application extends SilexApplication
 
     private function configureListeners()
     {
-        // todo
+        $app = $this;
+
+        $this->error(function (\Exception $e, $statusCode) use ($app) {
+
+            if (strpos($app['request']->getPathInfo(), '/api') !== 0) {
+                return null;
+            }
+
+            if ($app['debug' && $statusCode == 500]) {
+                return null;
+            }
+
+            if ($e instanceof ApiProblemException) {
+                $apiProblem = $e->getApiProblem();
+            } else {
+                $apiProblem = new ApiProblem($statusCode);
+
+                if ($e instanceof HttpException) {
+                    $apiProblem->set('details', $e->getMessage());
+                }
+            }
+
+            $data = $apiProblem->toArray();
+            if ($data['type'] != 'about:blank') {
+                $data['type'] = 'http://localhost:800/docs/errors#' . $data['type'];
+            }
+
+            $response = new JsonResponse($data, $apiProblem->getStatusCode());
+            $response->headers->add(['Content-Type' => 'application/problem+json']);
+
+            return $response;
+        });
     }
 } 

@@ -34,7 +34,7 @@ class ProgrammerController extends BaseController
 
         $errors = $this->validate($programmer);
         if (!empty($errors)) {
-            return $this->handleValidationResponse($errors);
+            $this->throwApiProblemValidationException($errors);
         }
 
         $this->save($programmer);
@@ -64,7 +64,7 @@ class ProgrammerController extends BaseController
 
         $errors = $this->validate($programmer);
         if (!empty($errors)) {
-            return $this->handleValidationResponse($errors);
+            $this->throwApiProblemValidationException($errors);
         }
 
         $this->save($programmer);
@@ -157,14 +157,11 @@ class ProgrammerController extends BaseController
         $programmer->userId = $this->findUserByUsername('weaverryan')->id;
     }
 
-    private function handleValidationResponse(array $errors)
+    private function throwApiProblemValidationException(array $errors)
     {
         $apiProblem = new ApiProblem(400, ApiProblem::TYPE_VALIDATION_ERROR);
-        $apiProblem->setExtraField('errors', $errors);
+        $apiProblem->set('errors', $errors);
 
-        $response = new JsonResponse($apiProblem->toArray(), $apiProblem->getStatusCode());
-        $response->headers->add(['Content-Type' => 'application/problem+json']);
-
-        return $response;
+        throw new ApiProblemException($apiProblem);
     }
 }

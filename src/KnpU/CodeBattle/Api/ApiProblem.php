@@ -9,6 +9,8 @@
 
 namespace KnpU\CodeBattle\Api;
 
+use Symfony\Component\HttpFoundation\Response;
+
 class ApiProblem
 {
     const TYPE_VALIDATION_ERROR = 'validation_error';
@@ -33,16 +35,21 @@ class ApiProblem
      * @param $type
      * @throws \Exception
      */
-    public function __construct($statusCode, $type)
+    public function __construct($statusCode, $type = null)
     {
         $this->statusCode = $statusCode;
         $this->type = $type;
 
-        if (!isset(self::$titles[$type])) {
-            throw new \Exception(sprintf('No title for type "%s"/ Did youmake it up?', $type));
-        }
+        if ($type === null) {
+            $this->type = 'about:blank';
+            $this->title = Response::$statusTexts[$statusCode] ?? 'Unknow status code :(';
+        } else {
+            if (!isset(self::$titles[$type])) {
+                throw new \Exception(sprintf('No title for type "%s"/ Did youmake it up?', $type));
+            }
 
-        $this->title = self::$titles[$type];
+            $this->title = self::$titles[$type];
+        }
     }
 
     public function toArray()
@@ -70,7 +77,7 @@ class ApiProblem
      * @param $value
      * @internal param array $extraField
      */
-    public function setExtraField($name, $value)
+    public function set($name, $value)
     {
         $this->extraField[$name] = $value;
     }
